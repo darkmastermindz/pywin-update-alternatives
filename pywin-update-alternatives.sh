@@ -15,6 +15,15 @@ REPO_ROOT="$SCRIPT_DIR"
 # Locate a suitable Python interpreter
 # ---------------------------------------------------------------------------
 _find_python() {
+    if [ -n "${PYWIN_UPDATE_ALTERNATIVES_PYTHON:-}" ]; then
+        local ver
+        ver=$("$PYWIN_UPDATE_ALTERNATIVES_PYTHON" -c "import sys; print(sys.version_info >= (3,7))" 2>/dev/null || true)
+        if [ "$ver" = "True" ]; then
+            echo "$PYWIN_UPDATE_ALTERNATIVES_PYTHON"
+            return 0
+        fi
+    fi
+
     local candidates=("python" "python3" "py")
     for py in "${candidates[@]}"; do
         if command -v "$py" &>/dev/null; then

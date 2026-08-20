@@ -202,7 +202,7 @@ class DebianAlternativesCliTests(unittest.TestCase):
 
         rc, stdout, stderr = self.invoke(*self.command_prefix(), "--config", "pager", stdin_text="2\n")
         self.assertEqual(rc, 0, stderr)
-        self.assertIn("choices for pager", stdout)
+        self.assertIn("choices for the alternative pager", stdout)
 
         rc, stdout, stderr = self.invoke(*self.command_prefix(), "--get-selections")
         self.assertEqual(rc, 0, stderr)
