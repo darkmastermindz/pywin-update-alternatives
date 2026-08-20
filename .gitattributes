@@ -1,0 +1,3 @@
+# Ensure shell scripts always use LF line endings so that Git Bash / MSYS2
+# can execute them on Windows regardless of core.autocrlf settings.
+*.sh    text eol=lf

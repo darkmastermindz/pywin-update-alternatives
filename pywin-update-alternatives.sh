@@ -16,10 +16,19 @@ REPO_ROOT="$SCRIPT_DIR"
 # ---------------------------------------------------------------------------
 _find_python() {
     if [ -n "${PYWIN_UPDATE_ALTERNATIVES_PYTHON:-}" ]; then
+        local py_path="${PYWIN_UPDATE_ALTERNATIVES_PYTHON}"
+        # Convert Windows-style backslash paths to POSIX paths when running
+        # under MSYS2/Cygwin (e.g. Git Bash).  Without this, a path like
+        # "C:\Python\python.exe" may not be execable from bash directly.
+        if command -v cygpath &>/dev/null; then
+            py_path="$(cygpath -u "$py_path")"
+        fi
         local ver
-        ver=$("$PYWIN_UPDATE_ALTERNATIVES_PYTHON" -c "import sys; print(sys.version_info >= (3,7))" 2>/dev/null || true)
+        # Strip \r: native Windows executables output CRLF, and $() strips \n
+        # but not \r, so the comparison "True" would otherwise fail.
+        ver=$("$py_path" -c "import sys; print(sys.version_info >= (3,7))" 2>/dev/null | tr -d '\r' || true)
         if [ "$ver" = "True" ]; then
-            echo "$PYWIN_UPDATE_ALTERNATIVES_PYTHON"
+            echo "$py_path"
             return 0
         fi
     fi
@@ -28,7 +37,7 @@ _find_python() {
     for py in "${candidates[@]}"; do
         if command -v "$py" &>/dev/null; then
             local ver
-            ver=$("$py" -c "import sys; print(sys.version_info >= (3,7))" 2>/dev/null || true)
+            ver=$("$py" -c "import sys; print(sys.version_info >= (3,7))" 2>/dev/null | tr -d '\r' || true)
             if [ "$ver" = "True" ]; then
                 echo "$py"
                 return 0
