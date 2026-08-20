@@ -86,7 +86,7 @@ class LinkGroup:
             name=str(payload["name"]),
             link=str(payload["link"]),
             status=str(payload.get("status", "auto")),
-            selected=payload.get("selected") if payload.get("selected") is None else str(payload["selected"]),
+            selected=None if payload.get("selected") is None else str(payload["selected"]),
             slave_links=tuple(
                 SlaveLink(name=str(item["name"]), link=str(item["link"]))
                 for item in payload.get("slave_links", [])
@@ -371,7 +371,7 @@ def _parse_install_arguments(args: list[str]) -> tuple[str, str, str, int, tuple
     while index < len(args):
         if args[index] != "--slave":
             raise AlternativesError(f"Unexpected argument after --install: {args[index]}")
-        if index + 3 >= len(args):
+        if index + 4 > len(args):
             raise AlternativesError("--slave requires <link> <name> <path>")
         slave_link, slave_name, slave_path = args[index + 1 : index + 4]
         slave_links.append(SlaveLink(name=slave_name, link=slave_link))
@@ -685,7 +685,7 @@ def run_debian_cli(
                     continue
                 config_alternative(ctx, group.name, stdin, stdout)
             return 0
+        raise AlternativesError(f"Unsupported command: {command}")
     except AlternativesError as exc:
         _write(stderr, f"error: {exc}")
         return 2
-    raise AlternativesError(f"Unsupported command: {command}")
