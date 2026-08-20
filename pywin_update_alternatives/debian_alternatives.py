@@ -118,9 +118,12 @@ class CommandContext:
     debug: bool = False
 
     def write_log(self, message: str) -> None:
-        self.log_file.parent.mkdir(parents=True, exist_ok=True)
-        with self.log_file.open("a", encoding="utf-8") as handle:
-            handle.write(message.rstrip() + "\n")
+        try:
+            self.log_file.parent.mkdir(parents=True, exist_ok=True)
+            with self.log_file.open("a", encoding="utf-8") as handle:
+                handle.write(message.rstrip() + "\n")
+        except OSError:
+            return
 
 
 def _package_version() -> str:
