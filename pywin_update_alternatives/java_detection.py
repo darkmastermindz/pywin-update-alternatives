@@ -10,6 +10,10 @@ JAVA_PATTERN = re.compile(r"(java|jdk|jre)", re.IGNORECASE)
 JDK_PATTERN = re.compile(r"jdk", re.IGNORECASE)
 JRE_PATTERN = re.compile(r"jre", re.IGNORECASE)
 
+# Matches MSYS/Git Bash POSIX-style Windows paths such as /c/Program Files/...
+# Group 1 is the drive letter; Group 2 is the rest of the path.
+_MSYS_PATH_RE = re.compile(r"^/([a-zA-Z])(/.*)?$")
+
 
 @dataclass(frozen=True)
 class JavaInstallations:
@@ -23,12 +27,30 @@ class JavaInstallations:
         }
 
 
+def _msys_to_windows(path: str) -> str:
+    """Convert an MSYS/Git Bash POSIX path to a Windows path.
+
+    ``/c/Program Files/Java/jdk-21/bin`` → ``C:\\Program Files\\Java\\jdk-21\\bin``
+
+    Paths that are already Windows-style are returned unchanged.
+    """
+    m = _MSYS_PATH_RE.match(path)
+    if not m:
+        return path
+    drive = m.group(1).upper()
+    rest = (m.group(2) or "").replace("/", "\\")
+    return f"{drive}:{rest}"
+
+
 def _split_path_entries(path_value: str | None) -> tuple[str, ...]:
     if not path_value:
         return ()
 
+    # Prefer semicolon splitting (Windows-native), but fall back to colon
+    # when running inside Git Bash / MSYS2 where PATH uses ":" as separator.
     separator = ";" if ";" in path_value else os.pathsep
-    return tuple(entry.strip() for entry in path_value.split(separator) if entry.strip())
+    entries = (entry.strip() for entry in path_value.split(separator) if entry.strip())
+    return tuple(_msys_to_windows(entry) for entry in entries)
 
 
 def _unique(entries: Iterable[str]) -> tuple[str, ...]:

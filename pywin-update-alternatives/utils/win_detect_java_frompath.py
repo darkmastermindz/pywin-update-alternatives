@@ -1,47 +1,49 @@
-import winreg, os
+import os
+import winreg
+
 
 class win_detect_java_frompath:
-    reg_path = r'SYSTEM\CurrentControlSet\Control\Session Manager\Environment'
-    reg_key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, reg_path)
+    """Detect Java installations from Windows registry PATH entries."""
 
-@classmethod
-def get_as_user_env():
-    reg_path = r'USER\Environment'
-    reg_key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, reg_path)
-    return reg_path, reg_key
+    _SYS_REG_PATH = r'SYSTEM\CurrentControlSet\Control\Session Manager\Environment'
+    _USER_REG_PATH = r'Environment'
 
-@classmethod
-def get_as_sys_env():
-    reg_path = r'SYSTEM\CurrentControlSet\Control\Session Manager\Environment'
-    reg_key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, reg_path)
-    return reg_path, reg_key
+    @classmethod
+    def _get_path_from_reg(cls, hive, reg_path):
+        """Read the Path value from a registry key."""
+        try:
+            key = winreg.OpenKey(hive, reg_path)
+            value, _ = winreg.QueryValueEx(key, 'Path')
+            winreg.CloseKey(key)
+            return value
+        except OSError:
+            return ''
 
-@classmethod
-def get_detect():
-    system_environment_variables = winreg.QueryValueEx(reg_key, 'Path')[0]
-    system_environment_variables = system_environment_variables.split(";")
+    @classmethod
+    def get_as_user_env(cls):
+        """Return the user-scope PATH string from the registry."""
+        return cls._get_path_from_reg(winreg.HKEY_CURRENT_USER, cls._USER_REG_PATH)
 
-    # initializing substrings
-    subs_java = 'java'
-    subs_jre = 'jre'
-    subs_jdk = 'jdk'
-    
-    # using list comprehension
-    # to get string with substring
-    java_detect_res = [i for i in system_environment_variables if subs_java.IGNORECASE in i]
-    
-    jdk_detect_res = [i for i in java_detect_res if subs_jre.IGNORECASE not in i]
-    jre_detect_res = [i for i in java_detect_res if subs_jdk.IGNORECASE not in i]
-        
-    return (jdk_detect_res, jre_detect_res)
+    @classmethod
+    def get_as_sys_env(cls):
+        """Return the system-scope PATH string from the registry."""
+        return cls._get_path_from_reg(winreg.HKEY_LOCAL_MACHINE, cls._SYS_REG_PATH)
 
-@classmethod
-def get_current_version():
-    def run_command(command):
-        p = subprocess.Popen(command,
-        stdout = subprocess.PIPE,
-        stderr = subprocess.STDOUT)
-        return iter(p.stdout.readline, b'')
-    
-    out = list(run_command("java -version"))
-    return out
+    @classmethod
+    def _filter_java_paths(cls, path_string):
+        """Split a PATH string and return (jdk_paths, jre_paths) tuples."""
+        entries = [e.strip() for e in path_string.split(';') if e.strip()]
+        java_entries = [e for e in entries if 'java' in e.lower()]
+        jdk_paths = [e for e in java_entries if 'jre' not in e.lower()]
+        jre_paths = [e for e in java_entries if 'jdk' not in e.lower()]
+        return jdk_paths, jre_paths
+
+    @classmethod
+    def get_detect_from_sys(cls):
+        """Detect JDK/JRE entries in the system PATH registry value."""
+        return cls._filter_java_paths(cls.get_as_sys_env())
+
+    @classmethod
+    def get_detect_from_user(cls):
+        """Detect JDK/JRE entries in the user PATH registry value."""
+        return cls._filter_java_paths(cls.get_as_user_env())
