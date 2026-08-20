@@ -62,3 +62,25 @@ Options:
 | `--format` | `json`, `text` | `json` | Output format |
 | `--path` | Any PATH string | Current process `PATH` | Override the PATH to inspect |
 
+### `add-java-cert`
+
+Imports a certificate (`.cer`, `.pem`, or `.crt`) into the `cacerts` truststore of every JDK and JRE installation found on `PATH`.  This is a thin, cross-shell wrapper around `keytool -importcert`.
+
+```powershell
+.\scripts\pywin-update-alternatives.ps1 add-java-cert C:\certs\my-ca.cer --alias my-ca
+```
+
+```bash
+./pywin-update-alternatives.sh add-java-cert /c/certs/my-ca.cer --alias my-ca
+```
+
+Options:
+
+| Flag | Values | Default | Description |
+|------|--------|---------|-------------|
+| `CERT_FILE` | File path | *(required)* | Path to the certificate file to import |
+| `--alias` | String | *(required)* | Alias under which the certificate is stored in the truststore |
+| `--storepass` | String | `changeit` | Truststore password |
+| `--path` | Any PATH string | Current process `PATH` | Override the PATH used to find Java installations |
+| `--format` | `json`, `text` | `text` | Output format |
+
