@@ -510,9 +510,10 @@ def list_groups(ctx: CommandContext) -> tuple[LinkGroup, ...]:
     return tuple(groups)
 
 
-def _read_choice(stdin: TextIO, stdout: TextIO) -> str:
-    stdout.write("Selection: ")
-    stdout.flush()
+def _read_choice(stdin: TextIO, stdout: TextIO, *, prompt: bool) -> str:
+    if prompt:
+        stdout.write("Selection: ")
+        stdout.flush()
     line = stdin.readline()
     return line.strip() if line else ""
 
@@ -522,12 +523,12 @@ def config_alternative(ctx: CommandContext, name: str, stdin: TextIO, stdout: Te
     alternatives = tuple(sorted(group.alternatives, key=lambda alt: (-alt.priority, alt.path)))
     selected = _selected_alternative(group)
     if not ctx.quiet:
-        _write(stdout, f"There are {len(alternatives)} choices for {name}.")
+        _write(stdout, f"There are {len(alternatives)} choices for the alternative {name}.")
         _write(stdout, "  0    auto mode")
         for index, alternative in enumerate(alternatives, start=1):
             marker = "*" if selected == alternative else " "
             _write(stdout, f"{marker} {index}    {alternative.path}")
-    choice = _read_choice(stdin, stdout)
+    choice = _read_choice(stdin, stdout, prompt=not ctx.quiet)
     if choice == "":
         return group
     if choice == "0":
@@ -672,6 +673,9 @@ def run_debian_cli(
                     raise AlternativesError(f"Invalid selections line: {text}")
                 name, status, path = parts
                 if status == "auto":
+                    group = _load_group(ctx, name)
+                    if path != "none" and not any(alt.path == path for alt in group.alternatives):
+                        raise AlternativesError(f"Alternative '{path}' is not registered for '{name}'.")
                     auto_alternative(ctx, name)
                 elif status == "manual":
                     set_alternative(ctx, name, path)
