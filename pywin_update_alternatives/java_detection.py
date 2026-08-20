@@ -36,7 +36,7 @@ def _unique(entries: Iterable[str]) -> tuple[str, ...]:
     ordered: list[str] = []
 
     for entry in entries:
-        normalized = os.path.normcase(entry)
+        normalized = os.path.normpath(entry).replace("\\", "/").lower()
         if normalized in seen:
             continue
         seen.add(normalized)
