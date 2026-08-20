@@ -6,6 +6,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from pywin_update_alternatives.__main__ import main
+from pywin_update_alternatives.debian_alternatives import _root_join
 
 class DebianAlternativesCliTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -141,6 +142,14 @@ class DebianAlternativesCliTests(unittest.TestCase):
         )
         self.assertEqual(rc, 0, stderr)
 
+        rc, _stdout, stderr = self.invoke(
+            *self.command_prefix(),
+            "--set-selections",
+            stdin_text="vi auto\n",
+        )
+        self.assertEqual(rc, 2)
+        self.assertIn("Invalid selections line", stderr)
+
         rc, stdout, stderr = self.invoke(*self.command_prefix(), "--query", "vi")
         self.assertEqual(rc, 0, stderr)
         self.assertIn("Status: auto", stdout)
@@ -215,6 +224,10 @@ class DebianAlternativesCliTests(unittest.TestCase):
         rc, stdout, stderr = self.invoke(*self.command_prefix(), "--version")
         self.assertEqual(rc, 0, stderr)
         self.assertIn("pywin-update-alternatives", stdout)
+
+    def test_root_join_preserves_windows_drive_letter(self) -> None:
+        rooted = _root_join(Path("/tmp/root"), r"C:\tools\python.exe")
+        self.assertEqual(rooted, Path("/tmp/root") / "C" / "tools" / "python.exe")
 
 
 if __name__ == "__main__":

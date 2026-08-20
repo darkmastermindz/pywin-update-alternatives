@@ -179,9 +179,11 @@ def _is_absolute_like(path: str) -> bool:
 
 def _root_join(root: Path, path: str) -> Path:
     candidate = Path(path)
-    if _is_absolute_like(path):
-        stripped = path.lstrip("/\\")
-        return root / Path(stripped)
+    if _WINDOWS_ABSOLUTE_RE.match(path):
+        parts = [part for part in re.split(r"[\\/]+", path[2:]) if part]
+        return root / Path(path[0], *parts)
+    if path.startswith(("/", "\\")):
+        return root / Path(path.lstrip("/\\"))
     return root / candidate
 
 
@@ -518,11 +520,12 @@ def _read_choice(stdin: TextIO, stdout: TextIO) -> str:
 def config_alternative(ctx: CommandContext, name: str, stdin: TextIO, stdout: TextIO) -> LinkGroup:
     group = _load_group(ctx, name)
     alternatives = tuple(sorted(group.alternatives, key=lambda alt: (-alt.priority, alt.path)))
+    selected = _selected_alternative(group)
     if not ctx.quiet:
         _write(stdout, f"There are {len(alternatives)} choices for {name}.")
         _write(stdout, "  0    auto mode")
         for index, alternative in enumerate(alternatives, start=1):
-            marker = "*" if group.selected == alternative.path or (group.status == "auto" and _best_alternative(group) == alternative) else " "
+            marker = "*" if selected == alternative else " "
             _write(stdout, f"{marker} {index}    {alternative.path}")
     choice = _read_choice(stdin, stdout)
     if choice == "":
@@ -664,7 +667,10 @@ def run_debian_cli(
                 text = line.strip()
                 if not text:
                     continue
-                name, status, path = text.split(None, 2)
+                parts = text.split(None, 2)
+                if len(parts) != 3:
+                    raise AlternativesError(f"Invalid selections line: {text}")
+                name, status, path = parts
                 if status == "auto":
                     auto_alternative(ctx, name)
                 elif status == "manual":
