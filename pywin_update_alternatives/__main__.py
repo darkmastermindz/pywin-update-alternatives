@@ -5,10 +5,11 @@ import json
 import sys
 
 from .cert_management import add_cert_to_java
+from .debian_alternatives import run_debian_cli
 from .java_detection import detect_java_installations
 
 
-def build_parser() -> argparse.ArgumentParser:
+def build_helper_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="pywin-update-alternatives",
         description="Windows alternative helpers that can run on an embedded Python runtime.",
@@ -66,7 +67,12 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
+    argv = list(sys.argv[1:] if argv is None else argv)
+
+    if not argv or argv[0] not in {"detect-java", "add-java-cert"}:
+        return run_debian_cli(argv)
+
+    args = build_helper_parser().parse_args(argv)
 
     if args.command == "detect-java":
         detected = detect_java_installations(args.path_value)

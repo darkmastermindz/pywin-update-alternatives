@@ -18,6 +18,14 @@ function Get-EmbeddedPythonExe {
     return Join-Path (Get-EmbeddedRuntimeDirectory) "python.exe"
 }
 
+function Get-PreferredPythonExe {
+    if ($env:PYWIN_UPDATE_ALTERNATIVES_PYTHON) {
+        return $env:PYWIN_UPDATE_ALTERNATIVES_PYTHON
+    }
+
+    return Get-EmbeddedPythonExe
+}
+
 function Get-PythonArchitectureSuffix {
     switch ($env:PROCESSOR_ARCHITECTURE.ToUpperInvariant()) {
         "ARM64" { return "embed-arm64.zip" }
@@ -57,6 +65,10 @@ function Enable-EmbeddedSitePackages {
 }
 
 function Install-EmbeddedPython {
+    if ($env:PYWIN_UPDATE_ALTERNATIVES_PYTHON) {
+        return
+    }
+
     $runtimeDir = Get-EmbeddedRuntimeDirectory
     if (Test-Path (Get-EmbeddedPythonExe)) {
         return
@@ -80,7 +92,7 @@ Install-EmbeddedPython
 $repoRoot = Get-RepositoryRoot
 Push-Location $repoRoot
 try {
-    & (Get-EmbeddedPythonExe) -m pywin_update_alternatives @Arguments
+    & (Get-PreferredPythonExe) -m pywin_update_alternatives @Arguments
     exit $LASTEXITCODE
 }
 finally {

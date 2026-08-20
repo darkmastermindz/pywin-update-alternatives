@@ -24,6 +24,18 @@ The Git Bash launcher uses `python` / `python3` / `py` from `PATH`, or the `.emb
 
 ## Usage
 
+### Debian-compatible alternatives mode
+
+The Python entry point now also supports a Debian-style `update-alternatives` CLI for managing generic links, alternative targets, and slave links:
+
+```bash
+python -m pywin_update_alternatives --install /usr/bin/editor editor /opt/tools/nvim 100
+python -m pywin_update_alternatives --display editor
+python -m pywin_update_alternatives --config editor
+```
+
+Supported Debian-style commands include `--install`, `--remove`, `--remove-all`, `--auto`, `--display`, `--query`, `--list`, `--get-selections`, `--set-selections`, `--config`, `--set`, `--all`, `--help`, and `--version`.
+
 ### CMD Prompt
 
 ```cmd
@@ -83,4 +95,3 @@ Options:
 | `--storepass` | String | `changeit` | Truststore password |
 | `--path` | Any PATH string | Current process `PATH` | Override the PATH used to find Java installations |
 | `--format` | `json`, `text` | `text` | Output format |
-

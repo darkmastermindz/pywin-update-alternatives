@@ -19,6 +19,11 @@ if %ERRORLEVEL% equ 0 goto :eof
 rem If PowerShell script failed (e.g. network policy), fall through to Python fallback
 
 :fallback_python
+if defined PYWIN_UPDATE_ALTERNATIVES_PYTHON (
+    "%PYWIN_UPDATE_ALTERNATIVES_PYTHON%" -m pywin_update_alternatives %*
+    exit /b %ERRORLEVEL%
+)
+
 rem Try the embedded Python runtime first
 if exist "%~dp0.embedded-python\python.exe" (
     "%~dp0.embedded-python\python.exe" -m pywin_update_alternatives %*
@@ -37,4 +42,3 @@ for %%P in (python py python3) do (
 echo Error: Python 3.7+ not found. Please install Python or run the PowerShell
 echo        bootstrap first: scripts\pywin-update-alternatives.ps1
 exit /b 1
-
